@@ -1,0 +1,38 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+tmp/
+
+# Go
+*.test
+*.out
+vendor/
+dist/
+
+# Env
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Migrations
+migrations/*.db
+
+# Build
+/build/
+
+# Temporary
+/tmp/

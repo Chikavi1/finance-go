@@ -1,0 +1,728 @@
+package docs
+
+import "github.com/swaggo/swag"
+
+const docTemplate = `{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Finances Go API",
+    "description": "Personal finance management API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "name"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created successfully" },
+          "422": { "description": "Validation error" },
+          "409": { "description": "Email already registered" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful, returns tokens" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Tokens refreshed" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout (revoke refresh token)",
+        "tags": ["Auth"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Logged out successfully" }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Get current user profile",
+        "tags": ["Users"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile" }
+        }
+      },
+      "put": {
+        "summary": "Update current user profile",
+        "tags": ["Users"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Profile updated" }
+        }
+      }
+    },
+    "/users/me/password": {
+      "put": {
+        "summary": "Change current user password",
+        "tags": ["Users"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Password changed" }
+        }
+      }
+    },
+    "/accounts": {
+      "get": {
+        "summary": "Get all user accounts",
+        "tags": ["Accounts"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of accounts" }
+        }
+      },
+      "post": {
+        "summary": "Create a new account",
+        "tags": ["Accounts"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Account created" }
+        }
+      }
+    },
+    "/accounts/{id}": {
+      "get": {
+        "summary": "Get account by ID",
+        "tags": ["Accounts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Account details" },
+          "404": { "description": "Account not found" }
+        }
+      },
+      "put": {
+        "summary": "Update account",
+        "tags": ["Accounts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Account updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete account",
+        "tags": ["Accounts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Account deleted" }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "Get all user categories",
+        "tags": ["Categories"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of categories" }
+        }
+      },
+      "post": {
+        "summary": "Create a new category",
+        "tags": ["Categories"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Category created" }
+        }
+      }
+    },
+    "/categories/{id}": {
+      "get": {
+        "summary": "Get category by ID",
+        "tags": ["Categories"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Category details" }
+        }
+      },
+      "put": {
+        "summary": "Update category",
+        "tags": ["Categories"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Category updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete category",
+        "tags": ["Categories"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Category deleted" }
+        }
+      }
+    },
+    "/tags": {
+      "get": {
+        "summary": "Get all user tags",
+        "tags": ["Tags"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of tags" }
+        }
+      },
+      "post": {
+        "summary": "Create a new tag",
+        "tags": ["Tags"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Tag created" }
+        }
+      }
+    },
+    "/tags/{id}": {
+      "get": {
+        "summary": "Get tag by ID",
+        "tags": ["Tags"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tag details" }
+        }
+      },
+      "put": {
+        "summary": "Update tag",
+        "tags": ["Tags"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tag updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete tag",
+        "tags": ["Tags"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tag deleted" }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "Get all user transactions",
+        "tags": ["Transactions"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["income", "expense", "transfer"] } },
+          { "name": "account_id", "in": "query", "schema": { "type": "string" } },
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "List of transactions" }
+        }
+      },
+      "post": {
+        "summary": "Create a new transaction",
+        "tags": ["Transactions"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Transaction created" }
+        }
+      }
+    },
+    "/transactions/{id}": {
+      "get": {
+        "summary": "Get transaction by ID",
+        "tags": ["Transactions"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction details" }
+        }
+      },
+      "put": {
+        "summary": "Update transaction",
+        "tags": ["Transactions"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete transaction",
+        "tags": ["Transactions"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction deleted" }
+        }
+      }
+    },
+    "/attachments/upload": {
+      "post": {
+        "summary": "Upload an attachment",
+        "tags": ["Attachments"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" },
+                  "transaction_id": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Attachment uploaded" }
+        }
+      }
+    },
+    "/attachments/transaction/{transactionId}": {
+      "get": {
+        "summary": "Get attachments by transaction ID",
+        "tags": ["Attachments"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of attachments" }
+        }
+      }
+    },
+    "/attachments/{id}": {
+      "get": {
+        "summary": "Get attachment by ID",
+        "tags": ["Attachments"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Attachment details" }
+        }
+      },
+      "delete": {
+        "summary": "Delete attachment",
+        "tags": ["Attachments"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Attachment deleted" }
+        }
+      }
+    },
+    "/budgets": {
+      "get": {
+        "summary": "Get all user budgets",
+        "tags": ["Budgets"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "month", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 12 } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of budgets" }
+        }
+      },
+      "post": {
+        "summary": "Create a new budget",
+        "tags": ["Budgets"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Budget created" }
+        }
+      }
+    },
+    "/budgets/{id}": {
+      "get": {
+        "summary": "Get budget by ID",
+        "tags": ["Budgets"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget details" }
+        }
+      },
+      "put": {
+        "summary": "Update budget",
+        "tags": ["Budgets"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete budget",
+        "tags": ["Budgets"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget deleted" }
+        }
+      }
+    },
+    "/goals": {
+      "get": {
+        "summary": "Get all user goals",
+        "tags": ["Goals"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of goals" }
+        }
+      },
+      "post": {
+        "summary": "Create a new goal",
+        "tags": ["Goals"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Goal created" }
+        }
+      }
+    },
+    "/goals/{id}": {
+      "get": {
+        "summary": "Get goal by ID",
+        "tags": ["Goals"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Goal details" }
+        }
+      },
+      "put": {
+        "summary": "Update goal",
+        "tags": ["Goals"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Goal updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete goal",
+        "tags": ["Goals"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Goal deleted" }
+        }
+      }
+    },
+    "/debts": {
+      "get": {
+        "summary": "Get all user debts",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of debts" }
+        }
+      },
+      "post": {
+        "summary": "Create a new debt",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Debt created" }
+        }
+      }
+    },
+    "/debts/{id}": {
+      "get": {
+        "summary": "Get debt by ID",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Debt details" }
+        }
+      },
+      "put": {
+        "summary": "Update debt",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Debt updated" }
+        }
+      },
+      "delete": {
+        "summary": "Delete debt",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Debt deleted" }
+        }
+      }
+    },
+    "/debts/{id}/payments": {
+      "get": {
+        "summary": "Get debt payments",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of payments" }
+        }
+      },
+      "post": {
+        "summary": "Create debt payment",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "201": { "description": "Payment created" }
+        }
+      }
+    },
+    "/debts/{id}/payments/{paymentId}": {
+      "delete": {
+        "summary": "Delete debt payment",
+        "tags": ["Debts"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "paymentId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Payment deleted" }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "summary": "Get user dashboard summary",
+        "tags": ["Dashboard"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Dashboard data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_balance": { "type": "number" },
+                    "monthly_income": { "type": "number" },
+                    "monthly_expenses": { "type": "number" },
+                    "recent_transactions": { "type": "array" },
+                    "budgets": { "type": "array" },
+                    "active_debts_total": { "type": "number" },
+                    "active_debt_count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get all user settings",
+        "tags": ["Settings"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of settings" }
+        }
+      },
+      "put": {
+        "summary": "Update user settings",
+        "tags": ["Settings"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "example": {
+                  "currency": "USD",
+                  "locale": "en-US",
+                  "theme": "dark"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Settings updated" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}`
+
+var SwaggerInfo = &swag.Spec{
+	Version:          "1.0.0",
+	Host:             "",
+	BasePath:         "/api/v1",
+	Schemes:          []string{},
+	Title:            "Finances Go API",
+	Description:      "Personal finance management API",
+	InfoInstanceName: "swagger",
+	SwaggerTemplate:  docTemplate,
+}
+
+func init() {
+	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
+}
