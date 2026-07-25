@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 
 	"github.com/agnathor/finances-go/internal/config"
 )
@@ -52,7 +53,8 @@ func (m *Manager) GenerateAccessToken(userID string) (string, int64, error) {
 func (m *Manager) GenerateRefreshToken(userID string) (string, string, int64, error) {
 	expiresAt := time.Now().Add(m.refreshExpiration)
 
-	tokenID := fmt.Sprintf("ref_%s_%d", userID, time.Now().UnixNano())
+	// token_id must be a UUID because it is used as the DB primary key lookup for refresh_tokens.id.
+	tokenID := uuid.NewString()
 
 	claims := jwt.MapClaims{
 		"user_id":  userID,

@@ -22,17 +22,35 @@ func NewRefreshTokenRepository(pool *pgxpool.Pool) domain.RefreshTokenRepository
 }
 
 func (r *refreshTokenRepository) Create(ctx context.Context, token *domain.RefreshToken) error {
-	created, err := r.query.CreateRefreshToken(ctx, db.CreateRefreshTokenParams{
-		UserID:    mustParseUUID(token.UserID),
-		TokenHash: token.TokenHash,
-		ExpiresAt: toTimestamptz(token.ExpiresAt),
-	})
+	tokenUUID, err := parseUUID(token.ID)
+	if err != nil {
+		return domain.ErrTokenInvalid
+	}
+
+	created := db.RefreshToken{}
+	err = r.pool.QueryRow(ctx,
+		`INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, user_id, token_hash, expires_at, created_at, revoked`,
+		tokenUUID,
+		mustParseUUID(token.UserID),
+		token.TokenHash,
+		toTimestamptz(token.ExpiresAt),
+	).Scan(
+		&created.ID,
+		&created.UserID,
+		&created.TokenHash,
+		&created.ExpiresAt,
+		&created.CreatedAt,
+		&created.Revoked,
+	)
 	if err != nil {
 		return err
 	}
 
 	token.ID = pgUUIDToString(created.ID)
 	token.CreatedAt = created.CreatedAt.Time
+	token.Revoked = created.Revoked
 	return nil
 }
 

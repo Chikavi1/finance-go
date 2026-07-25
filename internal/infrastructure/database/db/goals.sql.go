@@ -167,3 +167,76 @@ func (q *Queries) UpdateGoal(ctx context.Context, arg UpdateGoalParams) (Goal, e
 	)
 	return i, err
 }
+
+const createGoalContribution = `-- name: CreateGoalContribution :one
+INSERT INTO goal_contributions (goal_id, amount, contribution_date, notes)
+VALUES ($1, $2, $3, $4)
+RETURNING id, goal_id, amount, contribution_date, notes, created_at
+`
+
+type CreateGoalContributionParams struct {
+	GoalID           pgtype.UUID `json:"goal_id"`
+	Amount           float64     `json:"amount"`
+	ContributionDate pgtype.Date `json:"contribution_date"`
+	Notes            pgtype.Text `json:"notes"`
+}
+
+func (q *Queries) CreateGoalContribution(ctx context.Context, arg CreateGoalContributionParams) (GoalContribution, error) {
+	row := q.db.QueryRow(ctx, createGoalContribution,
+		arg.GoalID,
+		arg.Amount,
+		arg.ContributionDate,
+		arg.Notes,
+	)
+	var i GoalContribution
+	err := row.Scan(
+		&i.ID,
+		&i.GoalID,
+		&i.Amount,
+		&i.ContributionDate,
+		&i.Notes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const deleteGoalContribution = `-- name: DeleteGoalContribution :exec
+DELETE FROM goal_contributions WHERE id = $1
+`
+
+func (q *Queries) DeleteGoalContribution(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteGoalContribution, id)
+	return err
+}
+
+const getGoalContributionsByGoalID = `-- name: GetGoalContributionsByGoalID :many
+SELECT id, goal_id, amount, contribution_date, notes, created_at FROM goal_contributions WHERE goal_id = $1 ORDER BY contribution_date DESC
+`
+
+func (q *Queries) GetGoalContributionsByGoalID(ctx context.Context, goalID pgtype.UUID) ([]GoalContribution, error) {
+	rows, err := q.db.Query(ctx, getGoalContributionsByGoalID, goalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GoalContribution{}
+	for rows.Next() {
+		var i GoalContribution
+		if err := rows.Scan(
+			&i.ID,
+			&i.GoalID,
+			&i.Amount,
+			&i.ContributionDate,
+			&i.Notes,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+

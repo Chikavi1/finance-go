@@ -33,7 +33,7 @@ func main() {
 	fmt.Println("Seeding database...")
 
 	userID := seedUser(ctx, q)
-	fmt.Printf("  User created: id=%s email=demo@finances.com password=Demo123456\n", userID)
+	fmt.Printf("  User created: id=%s email=chikavi10@gmail.com password=12345678A\n", userID)
 
 	accIDs := seedAccounts(ctx, q, userID)
 	fmt.Println("  Accounts created: 4")
@@ -86,12 +86,12 @@ func toDate(t time.Time) pgtype.Date {
 }
 
 func seedUser(ctx context.Context, q *db.Queries) string {
-	hashed, err := password.Hash("Demo123456")
+	hashed, err := password.Hash("12345678A")
 	if err != nil {
 		log.Fatalf("failed to hash password: %v", err)
 	}
 	u, err := q.CreateUser(ctx, db.CreateUserParams{
-		Email:        "demo@finances.com",
+		Email:        "chikavi10@gmail.com",
 		PasswordHash: hashed,
 		Name:         "Usuario Demo",
 		AvatarUrl:    toText(nil),

@@ -17,6 +17,7 @@ import (
 	"github.com/agnathor/finances-go/internal/application/debt"
 	debtpayment "github.com/agnathor/finances-go/internal/application/debtpayment"
 	"github.com/agnathor/finances-go/internal/application/goal"
+	goalcontribution "github.com/agnathor/finances-go/internal/application/goalcontribution"
 	"github.com/agnathor/finances-go/internal/application/setting"
 	"github.com/agnathor/finances-go/internal/application/tag"
 	"github.com/agnathor/finances-go/internal/application/transaction"
@@ -70,6 +71,7 @@ func NewRouter(deps Dependencies) *fiber.App {
 	attachmentRepo := database.NewAttachmentRepository(deps.DB)
 	budgetRepo := database.NewBudgetRepository(deps.DB)
 	goalRepo := database.NewGoalRepository(deps.DB)
+	goalContributionRepo := database.NewGoalContributionRepository(deps.DB)
 	debtRepo := database.NewDebtRepository(deps.DB)
 	debtPaymentRepo := database.NewDebtPaymentRepository(deps.DB)
 	settingRepo := database.NewSettingRepository(deps.DB)
@@ -89,6 +91,7 @@ func NewRouter(deps Dependencies) *fiber.App {
 	attachmentService := attachment.NewService(attachmentRepo, storageService)
 	budgetService := budget.NewService(budgetRepo)
 	goalService := goal.NewService(goalRepo)
+	goalContributionService := goalcontribution.NewService(goalContributionRepo, goalRepo)
 	debtServiceInstance := debt.NewService(debtRepo)
 	debtPaymentService := debtpayment.NewService(debtPaymentRepo)
 	dashboardService := dashboard.NewService(accountRepo, transactionRepo, budgetRepo, debtRepo)
@@ -103,7 +106,7 @@ func NewRouter(deps Dependencies) *fiber.App {
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	attachmentHandler := handler.NewAttachmentHandler(attachmentService)
 	budgetHandler := handler.NewBudgetHandler(budgetService)
-	goalHandler := handler.NewGoalHandler(goalService)
+	goalHandler := handler.NewGoalHandler(goalService, goalContributionService)
 	debtHandler := handler.NewDebtHandler(debtServiceInstance, debtPaymentService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	settingHandler := handler.NewSettingHandler(settingService)
@@ -170,6 +173,10 @@ func NewRouter(deps Dependencies) *fiber.App {
 	goalsGroup.Get("/:id", goalHandler.GetByID)
 	goalsGroup.Put("/:id", goalHandler.Update)
 	goalsGroup.Delete("/:id", goalHandler.Delete)
+	goalsGroup.Post("/:id/contributions", goalHandler.CreateContribution)
+	goalsGroup.Get("/:id/contributions", goalHandler.GetContributions)
+	goalsGroup.Delete("/:id/contributions/:contributionId", goalHandler.DeleteContribution)
+
 
 	debtsGroup := api.Group("/debts", middleware.AuthRequired(jwtManager))
 	debtsGroup.Post("/", debtHandler.Create)
