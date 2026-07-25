@@ -116,3 +116,76 @@ func (r *goalRepository) Delete(ctx context.Context, id string) error {
 
 	return r.query.DeleteGoal(ctx, goalUUID)
 }
+
+type goalContributionRepository struct {
+	pool  *pgxpool.Pool
+	query *db.Queries
+}
+
+func NewGoalContributionRepository(pool *pgxpool.Pool) domain.GoalContributionRepository {
+	return &goalContributionRepository{
+		pool:  pool,
+		query: db.New(pool),
+	}
+}
+
+func (r *goalContributionRepository) Create(ctx context.Context, c *domain.GoalContribution) error {
+	goalUUID, err := parseUUID(c.GoalID)
+	if err != nil {
+		return domain.ErrNotFound
+	}
+
+	created, err := r.query.CreateGoalContribution(ctx, db.CreateGoalContributionParams{
+		GoalID:           goalUUID,
+		Amount:           c.Amount,
+		ContributionDate: toNullableDate(&c.ContributionDate),
+		Notes:            toText(c.Notes),
+	})
+	if err != nil {
+		return err
+	}
+
+	c.ID = pgUUIDToString(created.ID)
+	c.CreatedAt = created.CreatedAt.Time
+	return nil
+}
+
+func (r *goalContributionRepository) GetByGoalID(ctx context.Context, goalID string) ([]*domain.GoalContribution, error) {
+	goalUUID, err := parseUUID(goalID)
+	if err != nil {
+		return nil, domain.ErrNotFound
+	}
+
+	contributions, err := r.query.GetGoalContributionsByGoalID(ctx, goalUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*domain.GoalContribution, len(contributions))
+	for i, gc := range contributions {
+		result[i] = mapGoalContribution(gc)
+	}
+
+	return result, nil
+}
+
+func (r *goalContributionRepository) Delete(ctx context.Context, id string) error {
+	contributionUUID, err := parseUUID(id)
+	if err != nil {
+		return domain.ErrNotFound
+	}
+
+	return r.query.DeleteGoalContribution(ctx, contributionUUID)
+}
+
+func mapGoalContribution(gc db.GoalContribution) *domain.GoalContribution {
+	return &domain.GoalContribution{
+		ID:               pgUUIDToString(gc.ID),
+		GoalID:           pgUUIDToString(gc.GoalID),
+		Amount:           gc.Amount,
+		ContributionDate: gc.ContributionDate.Time,
+		Notes:            fromText(gc.Notes),
+		CreatedAt:        gc.CreatedAt.Time,
+	}
+}
+

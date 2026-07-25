@@ -23,3 +23,15 @@ RETURNING *;
 
 -- name: DeleteGoal :exec
 DELETE FROM goals WHERE id = $1;
+
+-- name: CreateGoalContribution :one
+INSERT INTO goal_contributions (goal_id, amount, contribution_date, notes)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
+-- name: GetGoalContributionsByGoalID :many
+SELECT * FROM goal_contributions WHERE goal_id = $1 ORDER BY contribution_date DESC;
+
+-- name: DeleteGoalContribution :exec
+DELETE FROM goal_contributions WHERE id = $1;
+

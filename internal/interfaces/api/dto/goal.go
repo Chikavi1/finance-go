@@ -30,3 +30,18 @@ type GoalResponse struct {
 	CreatedAt     string   `json:"created_at"`
 	UpdatedAt     string   `json:"updated_at"`
 }
+
+type CreateGoalContributionRequest struct {
+	Amount           float64 `json:"amount" validate:"required,gt=0"`
+	ContributionDate string  `json:"contribution_date" validate:"required"`
+	Notes            *string `json:"notes,omitempty"`
+}
+
+type GoalContributionResponse struct {
+	ID               string  `json:"id"`
+	GoalID           string  `json:"goal_id"`
+	Amount           float64 `json:"amount"`
+	ContributionDate string  `json:"contribution_date"`
+	Notes            *string `json:"notes,omitempty"`
+	CreatedAt        string  `json:"created_at"`
+}

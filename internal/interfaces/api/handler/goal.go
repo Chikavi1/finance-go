@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/agnathor/finances-go/internal/application/goal"
+	goalContributionService "github.com/agnathor/finances-go/internal/application/goalcontribution"
 	"github.com/agnathor/finances-go/internal/domain"
 	"github.com/agnathor/finances-go/internal/interfaces/api/dto"
 	"github.com/agnathor/finances-go/internal/interfaces/api/middleware"
@@ -14,11 +15,15 @@ import (
 )
 
 type GoalHandler struct {
-	goalService goal.Service
+	goalService             goal.Service
+	goalContributionService goalContributionService.Service
 }
 
-func NewGoalHandler(goalService goal.Service) *GoalHandler {
-	return &GoalHandler{goalService: goalService}
+func NewGoalHandler(goalService goal.Service, goalContributionService goalContributionService.Service) *GoalHandler {
+	return &GoalHandler{
+		goalService:             goalService,
+		goalContributionService: goalContributionService,
+	}
 }
 
 func (h *GoalHandler) Create(c *fiber.Ctx) error {
@@ -128,6 +133,86 @@ func (h *GoalHandler) Delete(c *fiber.Ctx) error {
 	})
 }
 
+func (h *GoalHandler) CreateContribution(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	goalID := c.Params("id")
+
+	_, err := h.goalService.GetByID(c.Context(), userID, goalID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return response.Error(c, fiber.StatusNotFound, "goal not found")
+		}
+		return response.Error(c, fiber.StatusInternalServerError, "failed to verify goal ownership")
+	}
+
+	var req dto.CreateGoalContributionRequest
+	if err := validator.ValidateRequest(c, &req); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, vErr.Errors)
+		}
+		return response.Error(c, fiber.StatusBadRequest, err.Error())
+	}
+
+	contributionDate, err := time.Parse("2006-01-02", req.ContributionDate)
+	if err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "invalid contribution_date format, use YYYY-MM-DD")
+	}
+
+	contribution, err := h.goalContributionService.Create(c.Context(), goalID, req.Amount, contributionDate, req.Notes)
+	if err != nil {
+		return response.Error(c, fiber.StatusInternalServerError, "failed to create contribution")
+	}
+
+	return response.Created(c, mapGoalContributionToResponse(contribution))
+}
+
+func (h *GoalHandler) GetContributions(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	goalID := c.Params("id")
+
+	_, err := h.goalService.GetByID(c.Context(), userID, goalID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return response.Error(c, fiber.StatusNotFound, "goal not found")
+		}
+		return response.Error(c, fiber.StatusInternalServerError, "failed to verify goal ownership")
+	}
+
+	contributions, err := h.goalContributionService.GetByGoalID(c.Context(), goalID)
+	if err != nil {
+		return response.Error(c, fiber.StatusInternalServerError, "failed to get contributions")
+	}
+
+	resp := make([]dto.GoalContributionResponse, len(contributions))
+	for i, gc := range contributions {
+		resp[i] = mapGoalContributionToResponse(gc)
+	}
+
+	return response.JSON(c, fiber.StatusOK, resp)
+}
+
+func (h *GoalHandler) DeleteContribution(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	goalID := c.Params("id")
+
+	_, err := h.goalService.GetByID(c.Context(), userID, goalID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return response.Error(c, fiber.StatusNotFound, "goal not found")
+		}
+		return response.Error(c, fiber.StatusInternalServerError, "failed to verify goal ownership")
+	}
+
+	contributionID := c.Params("contributionId")
+	if err := h.goalContributionService.Delete(c.Context(), contributionID); err != nil {
+		return response.Error(c, fiber.StatusInternalServerError, "failed to delete contribution")
+	}
+
+	return response.JSON(c, fiber.StatusOK, fiber.Map{
+		"message": "contribution deleted successfully",
+	})
+}
+
 func mapGoalToResponse(g *domain.Goal) dto.GoalResponse {
 	var targetDate *string
 	if g.TargetDate != nil {
@@ -146,5 +231,16 @@ func mapGoalToResponse(g *domain.Goal) dto.GoalResponse {
 		Color:         g.Color,
 		CreatedAt:     g.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:     g.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+func mapGoalContributionToResponse(gc *domain.GoalContribution) dto.GoalContributionResponse {
+	return dto.GoalContributionResponse{
+		ID:               gc.ID,
+		GoalID:           gc.GoalID,
+		Amount:           gc.Amount,
+		ContributionDate: gc.ContributionDate.Format("2006-01-02"),
+		Notes:            gc.Notes,
+		CreatedAt:        gc.CreatedAt.Format(time.RFC3339),
 	}
 }

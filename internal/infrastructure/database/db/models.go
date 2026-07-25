@@ -93,6 +93,15 @@ type Goal struct {
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
+type GoalContribution struct {
+	ID               pgtype.UUID        `json:"id"`
+	GoalID           pgtype.UUID        `json:"goal_id"`
+	Amount           float64            `json:"amount"`
+	ContributionDate pgtype.Date        `json:"contribution_date"`
+	Notes            pgtype.Text        `json:"notes"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
 type RefreshToken struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
