@@ -141,6 +141,7 @@ func (s *service) generateTokens(ctx context.Context, userID string) (*domain.To
 	refreshExpiry := time.Now().Add(s.cfg.RefreshExpiration)
 
 	rt := &domain.RefreshToken{
+		ID:        tokenID,
 		UserID:    userID,
 		TokenHash: hashToken(tokenID),
 		ExpiresAt: refreshExpiry,
