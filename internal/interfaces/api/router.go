@@ -103,7 +103,7 @@ func NewRouter(deps Dependencies) *fiber.App {
 	dashboardService := dashboard.NewService(accountRepo, transactionRepo, budgetRepo, debtRepo)
 	settingService := setting.NewService(settingRepo)
 
-	healthHandler := handler.NewHealthHandler()
+	healthHandler := handler.NewHealthHandler(deps.DB)
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
 	accountHandler := handler.NewAccountHandler(accountService)
@@ -118,6 +118,8 @@ func NewRouter(deps Dependencies) *fiber.App {
 	scheduledMovementHandler := handler.NewScheduledMovementHandler(scheduledMovementService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	settingHandler := handler.NewSettingHandler(settingService)
+
+	app.Get("/health", healthHandler.Check)
 
 	api := app.Group("/api/v1")
 
