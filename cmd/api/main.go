@@ -38,9 +38,10 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := database.EnsureReminderSchema(context.Background(), db); err != nil {
-		log.Fatal("failed to ensure reminder schema", zap.Error(err))
+	if err := database.RunMigrations(cfg.Database.URL, "migrations"); err != nil {
+		log.Fatal("failed to run migrations", zap.Error(err))
 	}
+	database.EnsureReminderSchema(context.Background(), db, log)
 
 	rdb, err := cache.NewRedisClient(cfg.Redis)
 	if err != nil {

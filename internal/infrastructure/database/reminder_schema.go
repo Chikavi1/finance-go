@@ -2,12 +2,13 @@ package database
 
 import (
 	"context"
-	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
-func EnsureReminderSchema(ctx context.Context, pool *pgxpool.Pool) error {
+func EnsureReminderSchema(ctx context.Context, pool *pgxpool.Pool, log *zap.Logger) {
 	queries := []string{
 		`ALTER TABLE reminders ADD COLUMN IF NOT EXISTS reminder_time TIME NOT NULL DEFAULT '09:00'`,
 		`ALTER TABLE reminders ADD COLUMN IF NOT EXISTS recurrence_type VARCHAR(20) NOT NULL DEFAULT 'once'`,
@@ -21,8 +22,13 @@ func EnsureReminderSchema(ctx context.Context, pool *pgxpool.Pool) error {
 
 	for _, query := range queries {
 		if _, err := pool.Exec(ctx, query); err != nil {
-			return fmt.Errorf("ensure reminders schema: %w", err)
+			if strings.Contains(err.Error(), "does not exist") {
+				log.Warn("reminders table not ready yet, skip schema migration", zap.Error(err))
+				return
+			}
+			log.Warn("reminders schema migration skipped", zap.Error(err))
+			return
 		}
 	}
-	return nil
+	log.Debug("reminders schema up to date")
 }
