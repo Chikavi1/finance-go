@@ -1,4 +1,4 @@
-CREATE TABLE settings (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     key VARCHAR(100) NOT NULL,
@@ -8,4 +8,4 @@ CREATE TABLE settings (
     UNIQUE(user_id, key)
 );
 
-CREATE INDEX idx_settings_user_id ON settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_settings_user_id ON settings(user_id);
