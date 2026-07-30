@@ -18,6 +18,8 @@ import (
 	debtpayment "github.com/agnathor/finances-go/internal/application/debtpayment"
 	"github.com/agnathor/finances-go/internal/application/goal"
 	goalcontribution "github.com/agnathor/finances-go/internal/application/goalcontribution"
+	"github.com/agnathor/finances-go/internal/application/reminder"
+	scheduledmovement "github.com/agnathor/finances-go/internal/application/scheduledmovement"
 	"github.com/agnathor/finances-go/internal/application/setting"
 	"github.com/agnathor/finances-go/internal/application/tag"
 	"github.com/agnathor/finances-go/internal/application/transaction"
@@ -74,6 +76,8 @@ func NewRouter(deps Dependencies) *fiber.App {
 	goalContributionRepo := database.NewGoalContributionRepository(deps.DB)
 	debtRepo := database.NewDebtRepository(deps.DB)
 	debtPaymentRepo := database.NewDebtPaymentRepository(deps.DB)
+	reminderRepo := database.NewReminderRepository(deps.DB)
+	scheduledMovementRepo := database.NewScheduledMovementRepository(deps.DB)
 	settingRepo := database.NewSettingRepository(deps.DB)
 
 	minioClient, err := storage.NewMinioClient(cfg.MinIO)
@@ -94,6 +98,8 @@ func NewRouter(deps Dependencies) *fiber.App {
 	goalContributionService := goalcontribution.NewService(goalContributionRepo, goalRepo)
 	debtServiceInstance := debt.NewService(debtRepo)
 	debtPaymentService := debtpayment.NewService(debtPaymentRepo)
+	reminderService := reminder.NewService(reminderRepo)
+	scheduledMovementService := scheduledmovement.NewService(scheduledMovementRepo, transactionRepo)
 	dashboardService := dashboard.NewService(accountRepo, transactionRepo, budgetRepo, debtRepo)
 	settingService := setting.NewService(settingRepo)
 
@@ -108,6 +114,8 @@ func NewRouter(deps Dependencies) *fiber.App {
 	budgetHandler := handler.NewBudgetHandler(budgetService)
 	goalHandler := handler.NewGoalHandler(goalService, goalContributionService)
 	debtHandler := handler.NewDebtHandler(debtServiceInstance, debtPaymentService)
+	reminderHandler := handler.NewReminderHandler(reminderService)
+	scheduledMovementHandler := handler.NewScheduledMovementHandler(scheduledMovementService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	settingHandler := handler.NewSettingHandler(settingService)
 
@@ -187,6 +195,21 @@ func NewRouter(deps Dependencies) *fiber.App {
 	debtsGroup.Post("/:id/payments", debtHandler.CreatePayment)
 	debtsGroup.Get("/:id/payments", debtHandler.GetPayments)
 	debtsGroup.Delete("/:id/payments/:paymentId", debtHandler.DeletePayment)
+
+	remindersGroup := api.Group("/reminders", middleware.AuthRequired(jwtManager))
+	remindersGroup.Post("/", reminderHandler.Create)
+	remindersGroup.Get("/", reminderHandler.GetAll)
+	remindersGroup.Get("/:id", reminderHandler.GetByID)
+	remindersGroup.Put("/:id", reminderHandler.Update)
+	remindersGroup.Delete("/:id", reminderHandler.Delete)
+
+	scheduledMovementsGroup := api.Group("/scheduled-movements", middleware.AuthRequired(jwtManager))
+	scheduledMovementsGroup.Post("/", scheduledMovementHandler.Create)
+	scheduledMovementsGroup.Get("/", scheduledMovementHandler.GetAll)
+	scheduledMovementsGroup.Post("/generate-due", scheduledMovementHandler.GenerateDue)
+	scheduledMovementsGroup.Get("/:id", scheduledMovementHandler.GetByID)
+	scheduledMovementsGroup.Put("/:id", scheduledMovementHandler.Update)
+	scheduledMovementsGroup.Delete("/:id", scheduledMovementHandler.Delete)
 
 	dashboardGroup := api.Group("/dashboard", middleware.AuthRequired(jwtManager))
 	dashboardGroup.Get("/", dashboardHandler.GetDashboard)

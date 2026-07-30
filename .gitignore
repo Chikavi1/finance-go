@@ -36,3 +36,6 @@ migrations/*.db
 
 # Temporary
 /tmp/
+
+# IDE
+.serena/

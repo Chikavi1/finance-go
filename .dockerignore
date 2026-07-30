@@ -1,0 +1,17 @@
+.env
+.env.*
+.git/
+.gitignore
+.gitattributes
+.agents/
+.serena/
+.cache/
+tmp/
+bin/
+dist/
+*.md
+.vscode/
+.idea/
+docker-compose*.yml
+Makefile
+README.md
