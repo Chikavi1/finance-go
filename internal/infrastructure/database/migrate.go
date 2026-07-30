@@ -69,6 +69,28 @@ func RunMigrations(pool *pgxpool.Pool, migrationsPath string) error {
 		return fmt.Errorf("ensure schema_migrations table: %w", err)
 	}
 
+	var hasDirty bool
+	if err := pool.QueryRow(ctx,
+		`SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns
+			WHERE table_name='schema_migrations' AND column_name='dirty'
+		)`,
+	).Scan(&hasDirty); err != nil {
+		return fmt.Errorf("check schema_migrations schema: %w", err)
+	}
+
+	if hasDirty {
+		if _, err := pool.Exec(ctx, `DROP TABLE schema_migrations`); err != nil {
+			return fmt.Errorf("drop golang-migrate schema_migrations: %w", err)
+		}
+		if _, err := pool.Exec(ctx, `CREATE TABLE schema_migrations (
+			version VARCHAR(255) PRIMARY KEY,
+			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`); err != nil {
+			return fmt.Errorf("recreate schema_migrations table: %w", err)
+		}
+	}
+
 	rows, err := pool.Query(ctx, `SELECT version FROM schema_migrations ORDER BY version`)
 	if err != nil {
 		return fmt.Errorf("get applied migrations: %w", err)
