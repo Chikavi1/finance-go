@@ -21,6 +21,7 @@ RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
 COPY --from=builder /app/bin/api /usr/local/bin/api
+COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/docs /app/docs
 
 USER app
