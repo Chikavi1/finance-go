@@ -1,4 +1,4 @@
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -12,9 +12,9 @@ CREATE TABLE accounts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_accounts_user_id ON accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);
 
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -26,9 +26,9 @@ CREATE TABLE categories (
     UNIQUE(user_id, name)
 );
 
-CREATE INDEX idx_categories_user_id ON categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id);
 
-CREATE TABLE tags (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS tags (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -36,4 +36,4 @@ CREATE TABLE tags (
     UNIQUE(user_id, name)
 );
 
-CREATE INDEX idx_tags_user_id ON tags(user_id);
+CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id);

@@ -6,4 +6,4 @@ UPDATE reminders
 SET day_of_month = EXTRACT(DAY FROM due_date)::INT
 WHERE day_of_month IS NULL;
 
-CREATE INDEX idx_reminders_recurrence ON reminders(recurrence_type, day_of_month);
+CREATE INDEX IF NOT EXISTS idx_reminders_recurrence ON reminders(recurrence_type, day_of_month);

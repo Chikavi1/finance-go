@@ -1,4 +1,4 @@
-CREATE TABLE reminders (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS reminders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -12,11 +12,11 @@ CREATE TABLE reminders (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_reminders_user_id ON reminders(user_id);
-CREATE INDEX idx_reminders_due_date ON reminders(due_date);
-CREATE INDEX idx_reminders_status ON reminders(status);
+CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_due_date ON reminders(due_date);
+CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
 
-CREATE TABLE scheduled_movements (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS scheduled_movements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
@@ -35,6 +35,6 @@ CREATE TABLE scheduled_movements (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_scheduled_movements_user_id ON scheduled_movements(user_id);
-CREATE INDEX idx_scheduled_movements_next_run_date ON scheduled_movements(next_run_date);
-CREATE INDEX idx_scheduled_movements_active ON scheduled_movements(active);
+CREATE INDEX IF NOT EXISTS idx_scheduled_movements_user_id ON scheduled_movements(user_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_movements_next_run_date ON scheduled_movements(next_run_date);
+CREATE INDEX IF NOT EXISTS idx_scheduled_movements_active ON scheduled_movements(active);

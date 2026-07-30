@@ -1,4 +1,4 @@
-CREATE TABLE budgets (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS budgets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
@@ -11,11 +11,11 @@ CREATE TABLE budgets (
     UNIQUE(user_id, category_id, month, year)
 );
 
-CREATE INDEX idx_budgets_user_id ON budgets(user_id);
-CREATE INDEX idx_budgets_category_id ON budgets(category_id);
-CREATE INDEX idx_budgets_month_year ON budgets(year, month);
+CREATE INDEX IF NOT EXISTS idx_budgets_user_id ON budgets(user_id);
+CREATE INDEX IF NOT EXISTS idx_budgets_category_id ON budgets(category_id);
+CREATE INDEX IF NOT EXISTS idx_budgets_month_year ON budgets(year, month);
 
-CREATE TABLE goals (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS goals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -28,9 +28,9 @@ CREATE TABLE goals (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_goals_user_id ON goals(user_id);
+CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id);
 
-CREATE TABLE debts (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS debts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -44,9 +44,9 @@ CREATE TABLE debts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_debts_user_id ON debts(user_id);
+CREATE INDEX IF NOT EXISTS idx_debts_user_id ON debts(user_id);
 
-CREATE TABLE debt_payments (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS debt_payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     debt_id UUID NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
     amount DOUBLE PRECISION NOT NULL,
@@ -55,4 +55,4 @@ CREATE TABLE debt_payments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_debt_payments_debt_id ON debt_payments(debt_id);
+CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);
