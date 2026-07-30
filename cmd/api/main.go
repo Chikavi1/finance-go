@@ -11,9 +11,11 @@ import (
 	"go.uber.org/zap"
 
 	_ "github.com/agnathor/finances-go/docs"
+	reminderNotification "github.com/agnathor/finances-go/internal/application/remindernotification"
 	"github.com/agnathor/finances-go/internal/config"
 	"github.com/agnathor/finances-go/internal/infrastructure/cache"
 	"github.com/agnathor/finances-go/internal/infrastructure/database"
+	emailInfra "github.com/agnathor/finances-go/internal/infrastructure/email"
 	api "github.com/agnathor/finances-go/internal/interfaces/api"
 	"github.com/agnathor/finances-go/pkg/logger"
 )
@@ -36,12 +38,28 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := database.EnsureReminderSchema(context.Background(), db); err != nil {
+		log.Fatal("failed to ensure reminder schema", zap.Error(err))
+	}
+
 	rdb, err := cache.NewRedisClient(cfg.Redis)
 	if err != nil {
 		log.Warn("redis not available, continuing without cache", zap.Error(err))
 	}
 	if rdb != nil {
 		defer rdb.Close()
+	}
+
+	reminderRepo := database.NewReminderRepository(db)
+	emailSender := emailInfra.NewSMTPSender(cfg.Email)
+	workerCtx, stopReminderWorker := context.WithCancel(context.Background())
+	defer stopReminderWorker()
+	if emailSender.IsConfigured() && cfg.Email.ReportNotificationEmail != "" {
+		notificationService := reminderNotification.NewService(reminderRepo, emailSender, cfg.Email.ReportNotificationEmail)
+		go reminderNotification.StartWorker(workerCtx, notificationService, time.Minute, "America/Mexico_City")
+		log.Info("reminder notification worker started")
+	} else {
+		log.Warn("reminder notification worker disabled: smtp config or recipient missing")
 	}
 
 	deps := api.Dependencies{
@@ -64,6 +82,7 @@ func main() {
 	<-quit
 
 	log.Info("shutting down server...")
+	stopReminderWorker()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

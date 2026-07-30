@@ -16,11 +16,14 @@ FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates tzdata
 
+RUN addgroup -S app && adduser -S app -G app
+
 WORKDIR /app
 
 COPY --from=builder /app/bin/api /usr/local/bin/api
-COPY --from=builder /app/.env.example /app/.env
 COPY --from=builder /app/docs /app/docs
+
+USER app
 
 EXPOSE 8080
 

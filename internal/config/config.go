@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -14,6 +15,7 @@ type Config struct {
 	JWT      JWTConfig
 	MinIO    MinIOConfig
 	Asynq    AsynqConfig
+	Email    EmailConfig
 	App      AppConfig
 }
 
@@ -60,6 +62,14 @@ type AsynqConfig struct {
 	RedisURL string
 }
 
+type EmailConfig struct {
+	SMTPHost                 string
+	SMTPPort                 string
+	SMTPUser                 string
+	SMTPPass                 string
+	ReportNotificationEmail  string
+}
+
 type AppConfig struct {
 	Name             string
 	Env              string
@@ -102,13 +112,18 @@ func Load() (*Config, error) {
 	v.SetDefault("MINIO_BUCKET", "finances")
 	v.SetDefault("MINIO_USE_SSL", false)
 	v.SetDefault("ASYNC_REDIS_URL", "redis://localhost:6379/1")
+	v.SetDefault("SMTP_HOST", "")
+	v.SetDefault("SMTP_PORT", "587")
+	v.SetDefault("SMTP_USER", "")
+	v.SetDefault("SMTP_PASS", "")
+	v.SetDefault("REPORT_NOTIFICATION_EMAIL", "")
 	v.SetDefault("APP_NAME", "Finances API")
 	v.SetDefault("APP_ENV", "development")
 	v.SetDefault("LOG_LEVEL", "debug")
 	v.SetDefault("CORS_ALLOWED_ORIGINS", "*")
 
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+	if _, err := os.Stat(".env"); err == nil {
+		if err := v.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
 	}
@@ -160,6 +175,13 @@ func Load() (*Config, error) {
 		},
 		Asynq: AsynqConfig{
 			RedisURL: v.GetString("ASYNC_REDIS_URL"),
+		},
+		Email: EmailConfig{
+			SMTPHost:                v.GetString("SMTP_HOST"),
+			SMTPPort:                v.GetString("SMTP_PORT"),
+			SMTPUser:                v.GetString("SMTP_USER"),
+			SMTPPass:                v.GetString("SMTP_PASS"),
+			ReportNotificationEmail: v.GetString("REPORT_NOTIFICATION_EMAIL"),
 		},
 		App: AppConfig{
 			Name:               v.GetString("APP_NAME"),
