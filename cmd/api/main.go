@@ -38,7 +38,7 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := database.RunMigrations(cfg.Database.URL, "migrations"); err != nil {
+	if err := database.RunMigrations(db, "migrations"); err != nil {
 		log.Fatal("failed to run migrations", zap.Error(err))
 	}
 	database.EnsureReminderSchema(context.Background(), db, log)
