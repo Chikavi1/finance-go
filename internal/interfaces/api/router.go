@@ -27,6 +27,7 @@ import (
 	"github.com/agnathor/finances-go/internal/config"
 	"github.com/agnathor/finances-go/internal/domain"
 	"github.com/agnathor/finances-go/internal/infrastructure/database"
+	email "github.com/agnathor/finances-go/internal/infrastructure/email"
 	"github.com/agnathor/finances-go/internal/infrastructure/storage"
 	"github.com/agnathor/finances-go/internal/interfaces/api/handler"
 	"github.com/agnathor/finances-go/internal/interfaces/api/middleware"
@@ -86,7 +87,9 @@ func NewRouter(deps Dependencies) *fiber.App {
 		storageService = storage.NewStorageService(minioClient, cfg.MinIO.Bucket)
 	}
 
-	authService := auth.NewService(userRepo, refreshTokenRepo, jwtManager, cfg.JWT)
+	emailSender := email.NewSMTPSender(cfg.Email)
+
+	authService := auth.NewService(userRepo, refreshTokenRepo, jwtManager, cfg.JWT, emailSender, cfg.App.Name)
 	userService := user.NewService(userRepo)
 	accountService := account.NewService(accountRepo)
 	categoryService := category.NewService(categoryRepo)
@@ -130,6 +133,11 @@ func NewRouter(deps Dependencies) *fiber.App {
 	authGroup.Post("/login", authHandler.Login)
 	authGroup.Post("/refresh", authHandler.RefreshToken)
 	authGroup.Post("/logout", middleware.AuthRequired(jwtManager), authHandler.Logout)
+	authGroup.Post("/forgot-password", func(c *fiber.Ctx) error {
+		c.Locals("password_reset_url", cfg.App.FrontendURL+"/reset-password")
+		return authHandler.ForgotPassword(c)
+	})
+	authGroup.Post("/reset-password", authHandler.ResetPassword)
 
 	userGroup := api.Group("/users", middleware.AuthRequired(jwtManager))
 	userGroup.Get("/me", userHandler.GetProfile)

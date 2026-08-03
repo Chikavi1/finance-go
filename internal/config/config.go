@@ -48,6 +48,7 @@ type JWTConfig struct {
 	Secret             string
 	AccessExpiration   time.Duration
 	RefreshExpiration  time.Duration
+	ResetExpiration    time.Duration
 }
 
 type MinIOConfig struct {
@@ -67,6 +68,7 @@ type EmailConfig struct {
 	SMTPPort                 string
 	SMTPUser                 string
 	SMTPPass                 string
+	SMTPFrom                 string
 	ReportNotificationEmail  string
 }
 
@@ -75,6 +77,7 @@ type AppConfig struct {
 	Env              string
 	LogLevel         string
 	CORSAllowedOrigins string
+	FrontendURL      string
 }
 
 func Load() (*Config, error) {
@@ -106,6 +109,7 @@ func Load() (*Config, error) {
 	v.SetDefault("JWT_SECRET", "change-this-to-a-secure-random-string-at-least-32-chars")
 	v.SetDefault("JWT_ACCESS_EXPIRATION", "15m")
 	v.SetDefault("JWT_REFRESH_EXPIRATION", "168h")
+	v.SetDefault("JWT_RESET_EXPIRATION", "30m")
 	v.SetDefault("MINIO_ENDPOINT", "localhost:9000")
 	v.SetDefault("MINIO_ACCESS_KEY", "minio")
 	v.SetDefault("MINIO_SECRET_KEY", "minio123")
@@ -116,11 +120,13 @@ func Load() (*Config, error) {
 	v.SetDefault("SMTP_PORT", "587")
 	v.SetDefault("SMTP_USER", "")
 	v.SetDefault("SMTP_PASS", "")
+	v.SetDefault("SMTP_FROM", "")
 	v.SetDefault("REPORT_NOTIFICATION_EMAIL", "")
 	v.SetDefault("APP_NAME", "Finances API")
 	v.SetDefault("APP_ENV", "development")
 	v.SetDefault("LOG_LEVEL", "debug")
 	v.SetDefault("CORS_ALLOWED_ORIGINS", "*")
+	v.SetDefault("FRONTEND_URL", "http://localhost:5173")
 
 	if _, err := os.Stat(".env"); err == nil {
 		if err := v.ReadInConfig(); err != nil {
@@ -136,6 +142,11 @@ func Load() (*Config, error) {
 	refreshExp, err := time.ParseDuration(v.GetString("JWT_REFRESH_EXPIRATION"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid JWT_REFRESH_EXPIRATION: %w", err)
+	}
+
+	resetExp, err := time.ParseDuration(v.GetString("JWT_RESET_EXPIRATION"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWT_RESET_EXPIRATION: %w", err)
 	}
 
 	cfg := &Config{
@@ -165,6 +176,7 @@ func Load() (*Config, error) {
 			Secret:            v.GetString("JWT_SECRET"),
 			AccessExpiration:  accessExp,
 			RefreshExpiration: refreshExp,
+			ResetExpiration:   resetExp,
 		},
 		MinIO: MinIOConfig{
 			Endpoint:  v.GetString("MINIO_ENDPOINT"),
@@ -181,6 +193,7 @@ func Load() (*Config, error) {
 			SMTPPort:                v.GetString("SMTP_PORT"),
 			SMTPUser:                v.GetString("SMTP_USER"),
 			SMTPPass:                v.GetString("SMTP_PASS"),
+			SMTPFrom:                v.GetString("SMTP_FROM"),
 			ReportNotificationEmail: v.GetString("REPORT_NOTIFICATION_EMAIL"),
 		},
 		App: AppConfig{
@@ -188,6 +201,7 @@ func Load() (*Config, error) {
 			Env:                v.GetString("APP_ENV"),
 			LogLevel:           v.GetString("LOG_LEVEL"),
 			CORSAllowedOrigins: v.GetString("CORS_ALLOWED_ORIGINS"),
+			FrontendURL:        v.GetString("FRONTEND_URL"),
 		},
 	}
 

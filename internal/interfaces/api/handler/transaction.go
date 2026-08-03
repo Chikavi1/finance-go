@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -50,6 +51,9 @@ func (h *TransactionHandler) Create(c *fiber.Ctx) error {
 	}
 
 	if err := h.transactionService.Create(c.Context(), userID, tx); err != nil {
+		if errors.Is(err, domain.ErrValidation) {
+			return response.Error(c, fiber.StatusBadRequest, err.Error())
+		}
 		return response.Error(c, fiber.StatusInternalServerError, "failed to create transaction")
 	}
 
@@ -145,6 +149,9 @@ func (h *TransactionHandler) Update(c *fiber.Ctx) error {
 	if err := h.transactionService.Update(c.Context(), userID, tx); err != nil {
 		if err == domain.ErrNotFound {
 			return response.Error(c, fiber.StatusNotFound, "transaction not found")
+		}
+		if errors.Is(err, domain.ErrValidation) {
+			return response.Error(c, fiber.StatusBadRequest, err.Error())
 		}
 		return response.Error(c, fiber.StatusInternalServerError, "failed to update transaction")
 	}

@@ -4,22 +4,22 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
 
     environment:
       - APP_ENV=${APP_ENV:-development}
       - SERVER_PORT=${SERVER_PORT:-8080}
-      - DATABASE_HOST=${DATABASE_HOST:-db}
-      - DATABASE_PORT=${DATABASE_PORT:-5432}
-      - DATABASE_USER=${DATABASE_USER:-root}
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-root}
-      - DATABASE_NAME=${DATABASE_NAME:-root}
-      - DATABASE_SSLMODE=${DATABASE_SSLMODE:-disable}
-      - DATABASE_URL=${DATABASE_URL:-postgres://root:root@db:5432/root?sslmode=disable}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=root
+      - DATABASE_NAME=root
+      - DATABASE_SSLMODE=disable
+      - DATABASE_URL=postgres://root:root@db:5432/root?sslmode=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
       - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio:9000}
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minio}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minio123}
@@ -29,6 +29,7 @@ services:
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
       - REPORT_NOTIFICATION_EMAIL=${REPORT_NOTIFICATION_EMAIL:-}
       - JWT_SECRET=${JWT_SECRET:-local-dev-secret-key-change-in-production}
       - JWT_ACCESS_EXPIRATION=${JWT_ACCESS_EXPIRATION:-24h}

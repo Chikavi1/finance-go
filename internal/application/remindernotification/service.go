@@ -17,49 +17,112 @@ type Service interface {
 }
 
 type service struct {
-	reminderRepo domain.ReminderRepository
-	emailSender  domain.EmailSender
-	recipient    string
+	reminderRepo      domain.ReminderRepository
+	emailSender       domain.EmailSender
+	fallbackRecipient string
 }
 
-func NewService(reminderRepo domain.ReminderRepository, emailSender domain.EmailSender, recipient string) Service {
+func NewService(reminderRepo domain.ReminderRepository, emailSender domain.EmailSender, fallbackRecipient string) Service {
 	return &service{
-		reminderRepo: reminderRepo,
-		emailSender:  emailSender,
-		recipient:    strings.TrimSpace(recipient),
+		reminderRepo:      reminderRepo,
+		emailSender:       emailSender,
+		fallbackRecipient: strings.TrimSpace(fallbackRecipient),
 	}
 }
 
 func (s *service) SendDue(ctx context.Context, today time.Time) (int, error) {
-	if s.recipient == "" {
-		return 0, fmt.Errorf("report notification email is not configured")
-	}
+	log := logger.Get()
+	log.Info("checking due reminder notifications",
+		zap.String("timestamp", today.Format(time.RFC3339)),
+		zap.String("date", today.Format("2006-01-02")),
+		zap.String("time", today.Format("15:04")),
+	)
 
 	reminders, err := s.reminderRepo.GetDueForNotification(ctx, today)
 	if err != nil {
+		log.Warn("failed to fetch due reminder notifications", zap.Error(err))
 		return 0, err
 	}
 
+	log.Info("due reminder notifications fetched", zap.Int("count", len(reminders)))
+
 	sent := 0
 	for _, reminder := range reminders {
+		recipient := strings.TrimSpace(reminder.UserEmail)
+		recipientSource := "user"
+		if recipient == "" {
+			recipient = s.fallbackRecipient
+			recipientSource = "fallback"
+		}
+		if recipient == "" {
+			log.Warn("skipping reminder notification: recipient email is missing",
+				zap.String("reminder_id", reminder.ID),
+				zap.String("user_id", reminder.UserID),
+				zap.String("title", reminder.Title),
+				zap.String("due_date", reminder.DueDate.Format("2006-01-02")),
+				zap.String("reminder_time", reminder.ReminderTime),
+			)
+			continue
+		}
+
 		message := domain.EmailMessage{
-			To:      s.recipient,
+			To:      recipient,
 			Subject: fmt.Sprintf("Recordatorio: %s", reminder.Title),
 			Body:    buildReminderBody(reminder),
 		}
+
+		log.Info("sending reminder notification email",
+			zap.String("reminder_id", reminder.ID),
+			zap.String("user_id", reminder.UserID),
+			zap.String("to", recipient),
+			zap.String("recipient_source", recipientSource),
+			zap.String("subject", message.Subject),
+			zap.String("title", reminder.Title),
+			zap.String("due_date", reminder.DueDate.Format("2006-01-02")),
+			zap.String("reminder_time", reminder.ReminderTime),
+			zap.String("recurrence_type", string(reminder.RecurrenceType)),
+		)
+
 		if err := s.emailSender.Send(ctx, message); err != nil {
+			log.Warn("failed to send reminder notification email",
+				zap.String("reminder_id", reminder.ID),
+				zap.String("user_id", reminder.UserID),
+				zap.String("to", recipient),
+				zap.String("subject", message.Subject),
+				zap.Error(err),
+			)
 			return sent, err
 		}
 
+		log.Info("reminder notification email accepted by sender",
+			zap.String("reminder_id", reminder.ID),
+			zap.String("user_id", reminder.UserID),
+			zap.String("to", recipient),
+			zap.String("subject", message.Subject),
+		)
+
 		if err := s.reminderRepo.MarkNotificationSent(ctx, reminder.ID, today); err != nil {
-			logger.Get().Warn("failed to mark reminder notification as sent",
+			log.Warn("failed to mark reminder notification as sent",
 				zap.String("reminder_id", reminder.ID),
+				zap.String("user_id", reminder.UserID),
+				zap.String("to", recipient),
 				zap.Error(err),
 			)
 			continue
 		}
+		log.Info("reminder notification marked as sent",
+			zap.String("reminder_id", reminder.ID),
+			zap.String("user_id", reminder.UserID),
+			zap.String("to", recipient),
+			zap.String("sent_at", today.Format(time.RFC3339)),
+		)
 		sent++
 	}
+
+	log.Info("finished reminder notification run",
+		zap.Int("due_count", len(reminders)),
+		zap.Int("sent_count", sent),
+	)
 
 	return sent, nil
 }

@@ -112,6 +112,48 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	})
 }
 
+func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
+	var req dto.ForgotPasswordRequest
+	if err := validator.ValidateRequest(c, &req); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, vErr.Errors)
+		}
+		return response.Error(c, fiber.StatusBadRequest, err.Error())
+	}
+
+	resetURL := c.Locals("password_reset_url").(string)
+
+	if err := h.authService.ForgotPassword(c.Context(), req.Email, resetURL); err != nil {
+		return response.Error(c, fiber.StatusInternalServerError, "failed to send recovery email")
+	}
+
+	return response.JSON(c, fiber.StatusOK, fiber.Map{
+		"message": "if the email exists, a recovery link was sent",
+	})
+}
+
+func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
+	var req dto.ResetPasswordRequest
+	if err := validator.ValidateRequest(c, &req); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, vErr.Errors)
+		}
+		return response.Error(c, fiber.StatusBadRequest, err.Error())
+	}
+
+	err := h.authService.ResetPassword(c.Context(), req.Token, req.Password)
+	if err != nil {
+		if err == domain.ErrTokenInvalid {
+			return response.Error(c, fiber.StatusBadRequest, "invalid or expired reset token")
+		}
+		return response.Error(c, fiber.StatusInternalServerError, "password reset failed")
+	}
+
+	return response.JSON(c, fiber.StatusOK, fiber.Map{
+		"message": "password updated successfully",
+	})
+}
+
 func mapUserToResponse(user *domain.User) dto.UserResponse {
 	return dto.UserResponse{
 		ID:        user.ID,

@@ -5,7 +5,7 @@ import "github.com/agnathor/finances-go/internal/domain"
 type CreateAccountRequest struct {
 	Name     string            `json:"name" validate:"required,min=1,max=255"`
 	Type     domain.AccountType `json:"type" validate:"required,oneof=cash wallet bank credit_card savings investment"`
-	Currency string            `json:"currency" validate:"required,oneof=USD EUR BRL GBP JPY"`
+	Currency string            `json:"currency" validate:"required,iso_currency"`
 	Balance  float64           `json:"balance"`
 	Color    string            `json:"color" validate:"required"`
 	Icon     string            `json:"icon" validate:"required"`
@@ -14,7 +14,7 @@ type CreateAccountRequest struct {
 type UpdateAccountRequest struct {
 	Name     string            `json:"name" validate:"required,min=1,max=255"`
 	Type     domain.AccountType `json:"type" validate:"required,oneof=cash wallet bank credit_card savings investment"`
-	Currency string            `json:"currency" validate:"required,oneof=USD EUR BRL GBP JPY"`
+	Currency string            `json:"currency" validate:"required,iso_currency"`
 	Color    string            `json:"color" validate:"required"`
 	Icon     string            `json:"icon" validate:"required"`
 	Archived bool              `json:"archived"`

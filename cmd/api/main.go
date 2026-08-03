@@ -55,12 +55,27 @@ func main() {
 	emailSender := emailInfra.NewSMTPSender(cfg.Email)
 	workerCtx, stopReminderWorker := context.WithCancel(context.Background())
 	defer stopReminderWorker()
-	if emailSender.IsConfigured() && cfg.Email.ReportNotificationEmail != "" {
-		notificationService := reminderNotification.NewService(reminderRepo, emailSender, cfg.Email.ReportNotificationEmail)
-		go reminderNotification.StartWorker(workerCtx, notificationService, time.Minute, "America/Mexico_City")
-		log.Info("reminder notification worker started")
-	} else {
-		log.Warn("reminder notification worker disabled: smtp config or recipient missing")
+	notificationService := reminderNotification.NewService(reminderRepo, emailSender, cfg.Email.ReportNotificationEmail)
+	go reminderNotification.StartWorker(workerCtx, notificationService, time.Minute, "America/Mexico_City")
+	log.Info("reminder notification worker started",
+		zap.Bool("smtp_configured", emailSender.IsConfigured()),
+		zap.String("smtp_host", cfg.Email.SMTPHost),
+		zap.String("smtp_port", cfg.Email.SMTPPort),
+		zap.Bool("smtp_user_configured", cfg.Email.SMTPUser != ""),
+		zap.Bool("smtp_pass_configured", cfg.Email.SMTPPass != ""),
+		zap.Bool("smtp_from_configured", cfg.Email.SMTPFrom != ""),
+		zap.Bool("fallback_recipient_configured", cfg.Email.ReportNotificationEmail != ""),
+		zap.String("timezone", "America/Mexico_City"),
+		zap.Duration("interval", time.Minute),
+	)
+	if !emailSender.IsConfigured() {
+		log.Warn("reminder notification emails will fail until smtp config is complete",
+			zap.Bool("smtp_host_configured", cfg.Email.SMTPHost != ""),
+			zap.Bool("smtp_port_configured", cfg.Email.SMTPPort != ""),
+			zap.Bool("smtp_user_configured", cfg.Email.SMTPUser != ""),
+			zap.Bool("smtp_pass_configured", cfg.Email.SMTPPass != ""),
+			zap.Bool("smtp_from_configured", cfg.Email.SMTPFrom != ""),
+		)
 	}
 
 	deps := api.Dependencies{

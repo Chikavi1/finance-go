@@ -19,14 +19,24 @@ func StartWorker(ctx context.Context, service Service, interval time.Duration, t
 
 	run := func() {
 		now := time.Now().In(loc)
+		log.Info("starting reminder notification worker tick",
+			zap.String("timestamp", now.Format(time.RFC3339)),
+			zap.String("timezone", loc.String()),
+		)
 		sent, err := service.SendDue(ctx, now)
 		if err != nil {
-			log.Warn("failed to send reminder notifications", zap.Error(err))
+			log.Warn("reminder notification worker tick failed",
+				zap.String("timestamp", now.Format(time.RFC3339)),
+				zap.String("timezone", loc.String()),
+				zap.Error(err),
+			)
 			return
 		}
-		if sent > 0 {
-			log.Info("reminder notifications sent", zap.Int("count", sent))
-		}
+		log.Info("finished reminder notification worker tick",
+			zap.String("timestamp", now.Format(time.RFC3339)),
+			zap.String("timezone", loc.String()),
+			zap.Int("sent_count", sent),
+		)
 	}
 
 	run()

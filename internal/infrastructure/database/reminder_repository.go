@@ -105,35 +105,36 @@ func (r *reminderRepository) GetByUserID(ctx context.Context, userID string, inc
 
 func (r *reminderRepository) GetDueForNotification(ctx context.Context, dueDate time.Time) ([]*domain.Reminder, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, user_id, title, amount, due_date, reminder_time, recurrence_type, day_of_month, status, related_type, related_id, notes, notification_sent_at, created_at, updated_at
-		FROM reminders
-		WHERE status = 'pending'
+		SELECT r.id, r.user_id, u.email, r.title, r.amount, r.due_date, r.reminder_time, r.recurrence_type, r.day_of_month, r.status, r.related_type, r.related_id, r.notes, r.notification_sent_at, r.created_at, r.updated_at
+		FROM reminders r
+		JOIN users u ON u.id = r.user_id
+		WHERE r.status = 'pending'
 		  AND (
 		    (
-		      recurrence_type = 'once'
-		      AND notification_sent_at IS NULL
+		      r.recurrence_type = 'once'
+		      AND r.notification_sent_at IS NULL
 		      AND (
-		        due_date < $1
-		        OR (due_date = $1 AND reminder_time <= $2)
+		        r.due_date < $1
+		        OR (r.due_date = $1 AND r.reminder_time <= $2)
 		      )
 		    )
 		    OR (
-		      recurrence_type = 'monthly'
-		      AND due_date <= $1
+		      r.recurrence_type = 'monthly'
+		      AND r.due_date <= $1
 		      AND (
-		        make_date(EXTRACT(YEAR FROM ($1)::date)::INT, EXTRACT(MONTH FROM ($1)::date)::INT, LEAST(day_of_month, EXTRACT(DAY FROM (date_trunc('month', ($1)::date) + INTERVAL '1 month - 1 day'))::INT)) < $1
+		        make_date(EXTRACT(YEAR FROM ($1)::date)::INT, EXTRACT(MONTH FROM ($1)::date)::INT, LEAST(r.day_of_month, EXTRACT(DAY FROM (date_trunc('month', ($1)::date) + INTERVAL '1 month - 1 day'))::INT)) < $1
 		        OR (
-		          make_date(EXTRACT(YEAR FROM ($1)::date)::INT, EXTRACT(MONTH FROM ($1)::date)::INT, LEAST(day_of_month, EXTRACT(DAY FROM (date_trunc('month', ($1)::date) + INTERVAL '1 month - 1 day'))::INT)) = $1
-		          AND reminder_time <= $2
+		          make_date(EXTRACT(YEAR FROM ($1)::date)::INT, EXTRACT(MONTH FROM ($1)::date)::INT, LEAST(r.day_of_month, EXTRACT(DAY FROM (date_trunc('month', ($1)::date) + INTERVAL '1 month - 1 day'))::INT)) = $1
+		          AND r.reminder_time <= $2
 		        )
 		      )
 		      AND (
-		        notification_sent_at IS NULL
-		        OR notification_sent_at::date < make_date(EXTRACT(YEAR FROM ($1)::date)::INT, EXTRACT(MONTH FROM ($1)::date)::INT, LEAST(day_of_month, EXTRACT(DAY FROM (date_trunc('month', ($1)::date) + INTERVAL '1 month - 1 day'))::INT))
+		        r.notification_sent_at IS NULL
+		        OR r.notification_sent_at::date < make_date(EXTRACT(YEAR FROM ($1)::date)::INT, EXTRACT(MONTH FROM ($1)::date)::INT, LEAST(r.day_of_month, EXTRACT(DAY FROM (date_trunc('month', ($1)::date) + INTERVAL '1 month - 1 day'))::INT))
 		      )
 		    )
 		  )
-		ORDER BY due_date ASC, reminder_time ASC, created_at ASC
+		ORDER BY r.due_date ASC, r.reminder_time ASC, r.created_at ASC
 	`, pgtype.Date{Time: dueDate, Valid: true}, toPgTime(dueDate.Format("15:04")))
 	if err != nil {
 		return nil, err
@@ -142,7 +143,7 @@ func (r *reminderRepository) GetDueForNotification(ctx context.Context, dueDate 
 
 	reminders := make([]*domain.Reminder, 0)
 	for rows.Next() {
-		reminder, err := scanReminder(rows)
+		reminder, err := scanReminderWithUserEmail(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -228,24 +229,74 @@ type scanner interface {
 
 func scanReminder(row scanner) (*domain.Reminder, error) {
 	var (
-		id          pgtype.UUID
-		userID      pgtype.UUID
-		amount      pgtype.Float8
-		dueDate     pgtype.Date
-		reminderTime pgtype.Time
-		recurrenceType string
-		dayOfMonth pgtype.Int4
-		relatedType pgtype.Text
-		relatedID   pgtype.UUID
-		notes       pgtype.Text
+		id                 pgtype.UUID
+		userID             pgtype.UUID
+		amount             pgtype.Float8
+		dueDate            pgtype.Date
+		reminderTime       pgtype.Time
+		recurrenceType     string
+		dayOfMonth         pgtype.Int4
+		relatedType        pgtype.Text
+		relatedID          pgtype.UUID
+		notes              pgtype.Text
 		notificationSentAt pgtype.Timestamptz
-		createdAt   pgtype.Timestamptz
-		updatedAt   pgtype.Timestamptz
-		status      string
-		reminder    domain.Reminder
+		createdAt          pgtype.Timestamptz
+		updatedAt          pgtype.Timestamptz
+		status             string
+		reminder           domain.Reminder
 	)
 
 	if err := row.Scan(&id, &userID, &reminder.Title, &amount, &dueDate, &reminderTime, &recurrenceType, &dayOfMonth, &status, &relatedType, &relatedID, &notes, &notificationSentAt, &createdAt, &updatedAt); err != nil {
+		return nil, err
+	}
+
+	reminder.ID = pgUUIDToString(id)
+	reminder.UserID = pgUUIDToString(userID)
+	reminder.Status = domain.ReminderStatus(status)
+	if amount.Valid {
+		reminder.Amount = &amount.Float64
+	}
+	reminder.DueDate = dueDate.Time
+	reminder.ReminderTime = fromPgTime(reminderTime)
+	reminder.RecurrenceType = domain.ReminderRecurrenceType(recurrenceType)
+	if dayOfMonth.Valid {
+		day := int(dayOfMonth.Int32)
+		reminder.DayOfMonth = &day
+	}
+	reminder.RelatedType = fromText(relatedType)
+	if relatedID.Valid {
+		s := pgUUIDToString(relatedID)
+		reminder.RelatedID = &s
+	}
+	reminder.Notes = fromText(notes)
+	if notificationSentAt.Valid {
+		reminder.NotificationSentAt = &notificationSentAt.Time
+	}
+	reminder.CreatedAt = createdAt.Time
+	reminder.UpdatedAt = updatedAt.Time
+	return &reminder, nil
+}
+
+func scanReminderWithUserEmail(row scanner) (*domain.Reminder, error) {
+	var (
+		id                 pgtype.UUID
+		userID             pgtype.UUID
+		amount             pgtype.Float8
+		dueDate            pgtype.Date
+		reminderTime       pgtype.Time
+		recurrenceType     string
+		dayOfMonth         pgtype.Int4
+		relatedType        pgtype.Text
+		relatedID          pgtype.UUID
+		notes              pgtype.Text
+		notificationSentAt pgtype.Timestamptz
+		createdAt          pgtype.Timestamptz
+		updatedAt          pgtype.Timestamptz
+		status             string
+		reminder           domain.Reminder
+	)
+
+	if err := row.Scan(&id, &userID, &reminder.UserEmail, &reminder.Title, &amount, &dueDate, &reminderTime, &recurrenceType, &dayOfMonth, &status, &relatedType, &relatedID, &notes, &notificationSentAt, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 

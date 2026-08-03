@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/agnathor/finances-go/internal/domain"
 )
@@ -24,6 +25,12 @@ func NewService(accountRepo domain.AccountRepository) Service {
 }
 
 func (s *service) Create(ctx context.Context, userID string, name string, accountType domain.AccountType, currency string, balance float64, color string, icon string) (*domain.Account, error) {
+	if currency == "" {
+		currency = "MXN"
+	} else {
+		currency = strings.ToUpper(currency)
+	}
+
 	account := &domain.Account{
 		UserID:   userID,
 		Name:     name,

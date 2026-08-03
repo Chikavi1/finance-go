@@ -19,6 +19,7 @@ type Manager struct {
 	secret           string
 	accessExpiration  time.Duration
 	refreshExpiration time.Duration
+	resetExpiration   time.Duration
 }
 
 func NewManager(cfg config.JWTConfig) *Manager {
@@ -26,6 +27,7 @@ func NewManager(cfg config.JWTConfig) *Manager {
 		secret:           cfg.Secret,
 		accessExpiration:  cfg.AccessExpiration,
 		refreshExpiration: cfg.RefreshExpiration,
+		resetExpiration:   cfg.ResetExpiration,
 	}
 }
 
@@ -127,6 +129,56 @@ func (m *Manager) ValidateRefreshToken(tokenString string) (userID, tokenID stri
 	}
 
 	return userID, tokenID, nil
+}
+
+func (m *Manager) GeneratePasswordResetToken(userID string) (string, int64, error) {
+	expiresAt := time.Now().Add(m.resetExpiration)
+
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"exp":     expiresAt.Unix(),
+		"iat":     time.Now().Unix(),
+		"iss":     "finances-api",
+		"type":    "password_reset",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte(m.secret))
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to sign password reset token: %w", err)
+	}
+
+	return signed, expiresAt.Unix(), nil
+}
+
+func (m *Manager) ValidatePasswordResetToken(tokenString string) (userID string, err error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(m.secret), nil
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("invalid password reset token: %w", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return "", fmt.Errorf("invalid password reset token claims")
+	}
+
+	tokenType, ok := claims["type"].(string)
+	if !ok || tokenType != "password_reset" {
+		return "", fmt.Errorf("invalid token type")
+	}
+
+	userID, ok = claims["user_id"].(string)
+	if !ok || userID == "" {
+		return "", fmt.Errorf("invalid user_id in token")
+	}
+
+	return userID, nil
 }
 
 func (m *Manager) AccessExpiration() time.Duration {

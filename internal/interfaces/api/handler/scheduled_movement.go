@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,6 +30,9 @@ func (h *ScheduledMovementHandler) Create(c *fiber.Ctx) error {
 	}
 
 	if err := h.scheduledMovementService.Create(c.Context(), userID, movement); err != nil {
+		if errors.Is(err, domain.ErrValidation) {
+			return response.Error(c, fiber.StatusBadRequest, err.Error())
+		}
 		return response.Error(c, fiber.StatusInternalServerError, "failed to create scheduled movement")
 	}
 	return response.Created(c, mapScheduledMovementToResponse(movement))
@@ -70,6 +74,9 @@ func (h *ScheduledMovementHandler) Update(c *fiber.Ctx) error {
 	if err := h.scheduledMovementService.Update(c.Context(), userID, movement); err != nil {
 		if err == domain.ErrNotFound {
 			return response.Error(c, fiber.StatusNotFound, "scheduled movement not found")
+		}
+		if errors.Is(err, domain.ErrValidation) {
+			return response.Error(c, fiber.StatusBadRequest, err.Error())
 		}
 		return response.Error(c, fiber.StatusInternalServerError, "failed to update scheduled movement")
 	}

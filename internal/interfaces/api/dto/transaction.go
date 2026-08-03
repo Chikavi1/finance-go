@@ -4,8 +4,8 @@ type CreateTransactionRequest struct {
 	AccountID   string   `json:"account_id" validate:"required,uuid"`
 	ToAccountID *string  `json:"to_account_id,omitempty" validate:"omitempty,uuid"`
 	CategoryID  *string  `json:"category_id,omitempty" validate:"omitempty,uuid"`
-	Type        string   `json:"type" validate:"required,oneof=income expense transfer"`
-	Amount      float64  `json:"amount" validate:"required,gt=0"`
+	Type        string   `json:"type" validate:"required,oneof=income expense transfer informational"`
+	Amount      float64  `json:"amount" validate:"gte=0"`
 	Description string   `json:"description" validate:"required,max=500"`
 	Notes       *string  `json:"notes,omitempty"`
 	Date        string   `json:"date" validate:"required"`
@@ -16,8 +16,8 @@ type UpdateTransactionRequest struct {
 	AccountID   string   `json:"account_id" validate:"required,uuid"`
 	ToAccountID *string  `json:"to_account_id,omitempty" validate:"omitempty,uuid"`
 	CategoryID  *string  `json:"category_id,omitempty" validate:"omitempty,uuid"`
-	Type        string   `json:"type" validate:"required,oneof=income expense transfer"`
-	Amount      float64  `json:"amount" validate:"required,gt=0"`
+	Type        string   `json:"type" validate:"required,oneof=income expense transfer informational"`
+	Amount      float64  `json:"amount" validate:"gte=0"`
 	Description string   `json:"description" validate:"required,max=500"`
 	Notes       *string  `json:"notes,omitempty"`
 	Date        string   `json:"date" validate:"required"`
