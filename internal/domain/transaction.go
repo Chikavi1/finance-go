@@ -8,9 +8,10 @@ import (
 type TransactionType string
 
 const (
-	TransactionTypeIncome   TransactionType = "income"
-	TransactionTypeExpense  TransactionType = "expense"
-	TransactionTypeTransfer TransactionType = "transfer"
+	TransactionTypeIncome        TransactionType = "income"
+	TransactionTypeExpense       TransactionType = "expense"
+	TransactionTypeTransfer      TransactionType = "transfer"
+	TransactionTypeInformational TransactionType = "informational"
 )
 
 type Transaction struct {
@@ -38,11 +39,11 @@ type TransactionRepository interface {
 }
 
 type TransactionFilter struct {
-	Type      *TransactionType
-	AccountID *string
+	Type       *TransactionType
+	AccountID  *string
 	CategoryID *string
-	StartDate *time.Time
-	EndDate   *time.Time
-	Page      int
-	PerPage   int
+	StartDate  *time.Time
+	EndDate    *time.Time
+	Page       int
+	PerPage    int
 }

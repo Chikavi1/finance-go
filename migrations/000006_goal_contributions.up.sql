@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS goal_contributions (
+CREATE TABLE IF NOT EXISTS goal_contributions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     goal_id UUID NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
     amount DOUBLE PRECISION NOT NULL,

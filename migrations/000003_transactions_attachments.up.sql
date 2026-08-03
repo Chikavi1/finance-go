@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
@@ -18,7 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_i
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS transaction_tags (
+CREATE TABLE IF NOT EXISTS transaction_tags (
     transaction_id UUID NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
     tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY (transaction_id, tag_id)
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS transaction_tags (
 
 CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag_id ON transaction_tags(tag_id);
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS attachments (
+CREATE TABLE IF NOT EXISTS attachments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     transaction_id UUID REFERENCES transactions(id) ON DELETE SET NULL,

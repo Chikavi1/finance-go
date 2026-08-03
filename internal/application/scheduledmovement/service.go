@@ -31,6 +31,9 @@ func (s *service) Create(ctx context.Context, userID string, movement *domain.Sc
 	if movement.NextRunDate.IsZero() {
 		movement.NextRunDate = movement.StartDate
 	}
+	if err := normalizeScheduledMovement(movement); err != nil {
+		return err
+	}
 	return s.movementRepo.Create(ctx, movement)
 }
 
@@ -57,6 +60,9 @@ func (s *service) Update(ctx context.Context, userID string, movement *domain.Sc
 	movement.UserID = userID
 	if movement.NextRunDate.IsZero() {
 		movement.NextRunDate = existing.NextRunDate
+	}
+	if err := normalizeScheduledMovement(movement); err != nil {
+		return err
 	}
 	return s.movementRepo.Update(ctx, movement)
 }
@@ -127,4 +133,17 @@ func nextRunDate(date time.Time, frequency domain.ScheduledMovementFrequency) ti
 	default:
 		return date.AddDate(0, 0, 1)
 	}
+}
+
+func normalizeScheduledMovement(movement *domain.ScheduledMovement) error {
+	if movement.Type == domain.TransactionTypeInformational {
+		movement.Amount = 0
+		movement.CategoryID = nil
+		return nil
+	}
+
+	if movement.Amount <= 0 {
+		return fmt.Errorf("%w: amount must be greater than zero", domain.ErrValidation)
+	}
+	return nil
 }

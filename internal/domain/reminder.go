@@ -20,21 +20,22 @@ const (
 )
 
 type Reminder struct {
-	ID          string         `json:"id"`
-	UserID      string         `json:"user_id"`
-	Title       string         `json:"title"`
-	Amount      *float64       `json:"amount,omitempty"`
-	DueDate     time.Time      `json:"due_date"`
-	ReminderTime string        `json:"reminder_time"`
-	RecurrenceType ReminderRecurrenceType `json:"recurrence_type"`
-	DayOfMonth *int `json:"day_of_month,omitempty"`
-	Status      ReminderStatus `json:"status"`
-	RelatedType *string        `json:"related_type,omitempty"`
-	RelatedID   *string        `json:"related_id,omitempty"`
-	Notes       *string        `json:"notes,omitempty"`
-	NotificationSentAt *time.Time `json:"notification_sent_at,omitempty"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
+	ID                 string                 `json:"id"`
+	UserID             string                 `json:"user_id"`
+	UserEmail          string                 `json:"-"`
+	Title              string                 `json:"title"`
+	Amount             *float64               `json:"amount,omitempty"`
+	DueDate            time.Time              `json:"due_date"`
+	ReminderTime       string                 `json:"reminder_time"`
+	RecurrenceType     ReminderRecurrenceType `json:"recurrence_type"`
+	DayOfMonth         *int                   `json:"day_of_month,omitempty"`
+	Status             ReminderStatus         `json:"status"`
+	RelatedType        *string                `json:"related_type,omitempty"`
+	RelatedID          *string                `json:"related_id,omitempty"`
+	Notes              *string                `json:"notes,omitempty"`
+	NotificationSentAt *time.Time             `json:"notification_sent_at,omitempty"`
+	CreatedAt          time.Time              `json:"created_at"`
+	UpdatedAt          time.Time              `json:"updated_at"`
 }
 
 type ReminderRepository interface {

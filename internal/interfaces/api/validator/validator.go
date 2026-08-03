@@ -10,6 +10,16 @@ import (
 
 var validate = validator.New()
 
+func init() {
+	validate.RegisterValidation("iso_currency", func(fl validator.FieldLevel) bool {
+		switch strings.ToUpper(fl.Field().String()) {
+		case "USD", "EUR", "BRL", "GBP", "JPY", "MXN":
+			return true
+		}
+		return false
+	})
+}
+
 func ValidateRequest(c *fiber.Ctx, req interface{}) error {
 	if err := c.BodyParser(req); err != nil {
 		return fmt.Errorf("invalid request body: %w", err)

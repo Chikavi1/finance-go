@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS reminders (
+CREATE TABLE IF NOT EXISTS reminders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_reminders_user_id ON reminders(user_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_due_date ON reminders(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS scheduled_movements (
+CREATE TABLE IF NOT EXISTS scheduled_movements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,

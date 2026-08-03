@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS budgets (
+CREATE TABLE IF NOT EXISTS budgets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_budgets_user_id ON budgets(user_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_category_id ON budgets(category_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_month_year ON budgets(year, month);
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS goals (
+CREATE TABLE IF NOT EXISTS goals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS goals (
 
 CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id);
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS debts (
+CREATE TABLE IF NOT EXISTS debts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS IF NOT EXISTS debts (
 
 CREATE INDEX IF NOT EXISTS idx_debts_user_id ON debts(user_id);
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS debt_payments (
+CREATE TABLE IF NOT EXISTS debt_payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     debt_id UUID NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
     amount DOUBLE PRECISION NOT NULL,
